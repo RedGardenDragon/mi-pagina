@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calendario Editable 2025</title>
+  <style>
+    :root {
+      --color-primario: #3498db;
+      --color-primario-hover: #2980b9;
+      --color-fondo: #f4f6f8;
+      --color-texto: #2c3e50;
+      --borde: #ccc;
+      --sombra: rgba(0,0,0,0.1);
+      --radio-borde: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--color-fondo);
+      margin: 0;
+      padding: 20px;
+      color: var(--color-texto);
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    #controls {
+      text-align: center;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    input[type="number"], button {
+      font-size: 1rem;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid var(--borde);
+    }
+
+    input[type="number"] {
+      width: 120px;
+      text-align: center;
+    }
+
+    button {
+      background-color: var(--color-primario);
+      color: white;
+      border: none;
+      transition: background-color 0.3s;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: var(--color-primario-hover);
+    }
+
+    .calendar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .month {
+      background: white;
+      border-radius: var(--radio-borde);
+      box-shadow: 0 4px 12px var(--sombra);
+      padding: 15px;
+      min-width: 320px;
+      overflow-x: auto;
+    }
+
+    .month h2 {
+      text-align: center;
+      color: #34495e;
+      font-size: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid var(--borde);
+      padding: 8px;
+      text-align: center;
+      min-width: 80px;
+    }
+
+    th {
+      background: #ecf0f1;
+    }
+
+    .name-cell {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px;
+      gap: 6px;
+    }
+
+    .name-input {
+      width: 100%;
+      font-size: 14px;
+      border: none;
+      background: transparent;
+      padding: 4px;
+    }
+
+    .editable {
+      cursor: pointer;
+    }
+
+    /* Etiquetas de colores */
+    .baja { background: #ffe082; }
+    .libra { background: #81c784; color: white; }
+    .manana { background: #4fc3f7; color: white; }
+    .tarde { background: #ffca28; color: black; }
+    .festivo { background: #e53935; color: white; }
+  </style>
+</head>
+<body>
+  <h1 id="calendarTitle">Calendario 2025</h1>
+  <div id="controls">
+    <label for="yearInput">Año:</label>
+    <input type="number" id="yearInput" value="2025" min="2000" max="2100" />
+    <button onclick="generarCalendario()">Generar</button>
+    <button onclick="agregarNombre()">Agregar Nombre</button>
+    <select id="mesSelect">
+  <option value="0">Enero</option>
+  <option value="1">Febrero</option>
+  <option value="2">Marzo</option>
+  <option value="3">Abril</option>
+  <option value="4">Mayo</option>
+  <option value="5">Junio</option>
+  <option value="6">Julio</option>
+  <option value="7">Agosto</option>
+  <option value="8">Septiembre</option>
+  <option value="9">Octubre</option>
+  <option value="10">Noviembre</option>
+  <option value="11">Diciembre</option>
+</select>
+<button onclick="capturarMes()">Capturar Mes Seleccionado</button>
+
+  </div>
+
+  <div class="calendar" id="calendar"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    const nombresKey = 'calendario_nombres';
+    const celdasKey = 'calendario_celdas';
+
+    let nombres = JSON.parse(localStorage.getItem(nombresKey)) || [
+      "ANA BELÉN VICENTE",
+      "ANA Mª GONZÁLEZ",
+      "ISABEL JIMÉNEZ",
+      "Mª JESÚS ROJO",
+      "PATRICIA"
+    ];
+    let celdasData = JSON.parse(localStorage.getItem(celdasKey)) || {};
+
+    const meses = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+
+    function guardarDatos() {
+      localStorage.setItem(nombresKey, JSON.stringify(nombres));
+      localStorage.setItem(celdasKey, JSON.stringify(celdasData));
+    }
+
+    function generarCalendario() {
+      const anio = parseInt(document.getElementById("yearInput").value);
+      document.getElementById("calendarTitle").textContent = `Calendario ${anio}`;
+      const container = document.getElementById("calendar");
+      container.innerHTML = "";
+
+      for (let m = 0; m < 12; m++) {
+        const diasMes = new Date(anio, m + 1, 0).getDate();
+        const tabla = document.createElement("table");
+        const cabecera = document.createElement("tr");
+        cabecera.innerHTML = "<th>Nombre</th>";
+        for (let d = 1; d <= diasMes; d++) {
+          cabecera.innerHTML += `<th>${d}</th>`;
+        }
+        tabla.appendChild(cabecera);
+
+        nombres.forEach((nombre, index) => {
+          const fila = document.createElement("tr");
+          const celdaNombre = document.createElement("th");
+          celdaNombre.classList.add("name-cell");
+          celdaNombre.innerHTML = `
+            <span>${nombre}</span>
+            <button onclick="eliminarNombre(${index})">❌</button>
+          `;
+          fila.appendChild(celdaNombre);
+
+          for (let d = 1; d <= diasMes; d++) {
+            const celda = document.createElement("td");
+            celda.classList.add("editable");
+            const id = `${anio}_${m}_${index}_${d}`;
+            celda.textContent = celdasData[id] || "";
+            aplicarColor(celda);
+
+            celda.addEventListener("click", () => activarEdicion(celda, id));
+            fila.appendChild(celda);
+          }
+          tabla.appendChild(fila);
+        });
+
+        const divMes = document.createElement("div");
+        divMes.className = "month";
+        divMes.id = `mes_${m}`;
+        divMes.innerHTML = `<h2>${meses[m]}</h2>`;
+        divMes.appendChild(tabla);
+        container.appendChild(divMes);
+      }
+    }
+
+    function aplicarColor(celda) {
+      const valor = celda.textContent.trim().toUpperCase();
+      celda.className = "editable";
+      if (valor === "B" || valor.includes("BAJA")) {
+        celda.classList.add("baja");
+      } else if (valor === "L" || valor.includes("LIBRA")) {
+        celda.classList.add("libra");
+      } else if (["M/T", "M-T", "MT"].includes(valor) || (valor.includes("MAÑANA") && valor.includes("TARDE"))) {
+        celda.classList.add("festivo");
+      } else if (valor === "M" || valor.includes("MAÑANA")) {
+        celda.classList.add("manana");
+      } else if (valor === "T" || valor.includes("TARDE")) {
+        celda.classList.add("tarde");
+      }
+    }
+
+    function activarEdicion(celda, id) {
+      const valorActual = celda.textContent;
+      celda.textContent = "";
+      const input = document.createElement("input");
+      input.value = valorActual;
+      input.className = "name-input";
+      celda.appendChild(input);
+      input.focus();
+
+      input.addEventListener("blur", () => {
+        celda.textContent = input.value;
+        celdasData[id] = input.value;
+        aplicarColor(celda);
+        guardarDatos();
+      });
+
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") input.blur();
+      });
+    }
+
+    function agregarNombre() {
+      const nuevoNombre = prompt("Introduce un nuevo nombre:");
+      if (nuevoNombre) {
+        nombres.push(nuevoNombre);
+        guardarDatos();
+        generarCalendario();
+      }
+    }
+
+    function eliminarNombre(index) {
+      if (confirm("¿Eliminar este nombre del calendario?")) {
+        nombres.splice(index, 1);
+        guardarDatos();
+        generarCalendario();
+      }
+    }
+
+    function capturarMes() {
+  const mesSeleccionado = parseInt(document.getElementById("mesSelect").value, 10);
+  const anioSeleccionado = document.getElementById("yearInput").value;
+  const divMes = document.getElementById(`mes_${mesSeleccionado}`);
+  const titulo = document.createElement("h1");
+  titulo.textContent = `Calendario ${anioSeleccionado} - ${meses[mesSeleccionado]}`;
+  titulo.style.textAlign = "center";
+  titulo.style.fontSize = "2rem";
+  titulo.style.marginBottom = "20px";
+
+  // Crear contenedor temporal para la captura
+  const contenedor = document.createElement("div");
+  contenedor.style.background = "#ffffff"; // fondo blanco
+  contenedor.style.padding = "20px";
+  contenedor.appendChild(titulo);
+  contenedor.appendChild(divMes.cloneNode(true)); // Clonar el mes para no mover el original
+
+  document.body.appendChild(contenedor); // Añadir al DOM para que html2canvas lo pueda capturar
+
+  html2canvas(contenedor).then(canvas => {
+    const link = document.createElement("a");
+    link.download = `Calendario_${anioSeleccionado}_${meses[mesSeleccionado]}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    document.body.removeChild(contenedor); // Limpiar después de la captura
+  });
+}
+
+
+
+    
+
+    generarCalendario();
+  </script>
+</body>
+</html>
+
+
+
+
+
